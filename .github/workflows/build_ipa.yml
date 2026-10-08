@@ -39,7 +39,7 @@ env:
 jobs:
   build:
     name: Build RouteSim IPA
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 45
 
     steps:
@@ -48,10 +48,30 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Select Xcode 26.0.1
+      - name: Select Xcode 26.6
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "26.0.1"
+          xcode-version: "26.6"
+
+      - name: Verify Xcode and iOS SDK
+        run: |
+          set -euo pipefail
+          echo "=== Xcode ==="
+          xcodebuild -version
+      
+          echo "=== SDKs ==="
+          xcodebuild -showsdks
+      
+          echo "=== Developer Directory ==="
+          xcode-select -p
+      
+          test -d "$(xcrun --sdk iphoneos --show-sdk-path)" || {
+            echo "::error::iPhoneOS SDK is not available"
+            exit 1
+          }
+      
+          echo "=== iPhoneOS SDK ==="
+          xcrun --sdk iphoneos --show-sdk-path
 
       - name: Preflight - verify layout and FFI library
         run: |
@@ -84,7 +104,6 @@ jobs:
             -scheme "${{ env.SCHEME }}" \
             -configuration "${{ env.CONFIGURATION }}" \
             -archivePath build/StikDebug.xcarchive \
-            -sdk iphoneos \
             -destination "generic/platform=iOS" \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGN_IDENTITY="" \
